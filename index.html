@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Flange Calculator</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#f1f5f9;font-family:Arial,sans-serif;padding:18px}
+.container{max-width:650px;margin:auto}
+h1{color:#38bdf8;font-size:27px}
+.sub{color:#aab8ca}
+.card{background:#1e293b;padding:17px;border-radius:14px;margin:16px 0}
+h2{font-size:19px;color:#7dd3fc}
+label{display:block;margin:13px 0 6px;color:#cbd5e1;font-size:14px}
+input,select{width:100%;padding:13px;border:1px solid #475569;border-radius:8px;background:#0f172a;color:white;font-size:16px}
+button{width:100%;padding:15px;background:#0284c7;color:white;border:0;border-radius:9px;font-size:17px;font-weight:bold;margin-top:17px}
+.result{background:#0f172a;padding:15px;border-radius:10px;margin-top:12px}
+.big{font-size:25px;color:#4ade80;font-weight:bold}
+.line{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #334155}
+small{color:#94a3b8}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>⚙ Smart Flange Calculator</h1>
+<p class="sub">Weight • Material Cost • Profit Calculator</p>
+
+<div class="card">
+<h2>1. Material Details</h2>
+<label>Material</label>
+<select id="material" onchange="setRate()">
+<option value="7.9">SS 304L</option>
+<option value="8">SS 316L</option>
+<option value="7.85">MS</option>
+</select>
+<label>Material Rate (₹ per KG)</label>
+<input id="rate" type="number" value="250" min="0">
+<label>Quantity (Pieces)</label>
+<input id="qty" type="number" value="1" min="1">
+</div>
+
+<div class="card">
+<h2>2. Flange Dimensions (MM)</h2>
+<label>Outside Diameter (OD)</label>
+<input id="od" type="number" placeholder="Example: 152.5">
+<label>Inside Diameter / Bore (ID)</label>
+<input id="id" type="number" placeholder="Example: 50">
+<label>Flange Thickness</label>
+<input id="thick" type="number" placeholder="Example: 20">
+<label>Hub Outside Diameter</label>
+<input id="hubod" type="number" value="0">
+<label>Hub Height (above flange)</label>
+<input id="hubh" type="number" value="0">
+<label>Raised Face Outside Diameter</label>
+<input id="rfod" type="number" value="0">
+<label>Raised Face Height</label>
+<input id="rfh" type="number" value="0">
+</div>
+
+<div class="card">
+<h2>3. Cost & Profit</h2>
+<label>Material Wastage (%)</label>
+<input id="waste" type="number" value="5" min="0">
+<label>Profit Margin (%)</label>
+<input id="profit" type="number" value="20" min="0">
+<button onclick="calculate()">CALCULATE NOW</button>
+<div id="output" class="result" style="display:none"></div>
+</div>
+<small>Note: Approximate solid-volume calculation. Final weight and price depend on actual drawing, machining and material density.</small>
+</div>
+
+<script>
+function setRate(){
+ document.getElementById('rate').value =
+ document.getElementById('material').value === '7.9' ? 250 :
+ document.getElementById('material').value === '8' ? 300 : 100;
+}
+function calculate(){
+ const v=id=>Number(document.getElementById(id).value);
+ const od=v('od'), bore=v('id'), t=v('thick');
+ const hod=v('hubod'), hh=v('hubh');
+ const rfod=v('rfod'), rfh=v('rfh');
+ const qty=v('qty'), density=v('material');
+ const rate=v('rate'), waste=v('waste'), profit=v('profit');
+ const out=document.getElementById('output');
+
+ if(!od || !t || !qty || rate<0 || bore<0 || bore>=od ||
+ t<=0 || hod<0 || hh<0 || rfod<0 || rfh<0 ||
+ waste<0 || profit<0 || (hh>0 && (hod<=bore || hod>od)) ||
+ (rfh>0 && (rfod<=bore || rfod>od))){
+  alert('Please enter valid dimensions and prices.');
+  return;
+ }
+ const pi=Math.PI;
+ const plate=(pi/4)*(od*od-bore*bore)*t;
+ const hub=hh>0?(pi/4)*(hod*hod-bore*bore)*hh:0;
+ const rf=rfh>0?(pi/4)*(rfod*rfod-bore*bore)*rfh:0;
+ const oneWeight=(plate+hub+rf)*density/1000000;
+ const totalWeight=oneWeight*qty;
+ const materialCost=totalWeight*rate*(1+waste/100);
+ const selling=materialCost*(1+profit/100);
+ const money=n=>'₹'+n.toLocaleString('en-IN',{maximumFractionDigits:2});
+ out.style.display='block';
+ out.innerHTML=`
+ <h2>Calculation Result</h2>
+ <div class="line"><span>Weight per piece</span><b>${oneWeight.toFixed(3)} KG</b></div>
+ <div class="line"><span>Total weight</span><b>${totalWeight.toFixed(3)} KG</b></div>
+ <div class="line"><span>Material cost + wastage</span><b>${money(materialCost)}</b></div>
+ <div class="line"><span>Suggested selling total</span><b>${money(selling)}</b></div>
+ <div class="result"><small>Estimated selling price per piece</small><div class="big">${money(selling/qty)}</div></div>
+ <small>Excludes machining, labour, GST, transport and other overheads. Estimates assume a solid annular plate, hub and raised face.</small>`;
+}
+</script>
+</body>
+</html>
